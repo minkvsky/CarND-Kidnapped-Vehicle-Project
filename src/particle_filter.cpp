@@ -99,6 +99,28 @@ void ParticleFilter::dataAssociation(vector<LandmarkObs> predicted,
    *   probably find it useful to implement this method and use it as a helper
    *   during the updateWeights phase.
    */
+   for (int i = 0; i < observations.size(); i++){
+     LandmarkObs o = observations[i];
+     double min_dist = numeric_limits<double>::max();
+     int min_id;
+     double min_x;
+     double min_y;
+     for (int j = 0; j < predicted.size(); j++){
+       LandmarkObs p = predicted[j];
+       double op_dist = dist(o.x, o.y, p.x, p.y);
+       # find min
+       if (op_dist < min_dist){
+         min_dist = op_dist;
+         min_id = p.id;
+         min_x = p.x;
+         min_y = p.y;
+       }
+     }
+     // assign the observed measurement to this particular landmark
+     observations[i].id = min_id;
+     observations[i].x = min_x;
+     observations[i].y = min_y;
+   }
 
 }
 
