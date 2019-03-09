@@ -42,7 +42,7 @@ struct ground_truth {
  * Struct representing one landmark observation measurement.
  */
 struct LandmarkObs {
-  
+
   int id;     // Id of matching landmark in the map.
   double x;   // Local (vehicle coords) x position of landmark observation [m]
   double y;   // Local (vehicle coords) y position of landmark observation [m]
@@ -89,7 +89,7 @@ inline bool read_map_data(std::string filename, Map& map) {
   if (!in_file_map) {
     return false;
   }
-  
+
   // Declare single line of map file
   std::string line_map;
 
@@ -126,7 +126,7 @@ inline bool read_map_data(std::string filename, Map& map) {
  * @param filename Name of file containing control measurements.
  * @output True if opening and reading file was successful
  */
-inline bool read_control_data(std::string filename, 
+inline bool read_control_data(std::string filename,
                               std::vector<control_s>& position_meas) {
   // Get file of position measurements
   std::ifstream in_file_pos(filename.c_str(),std::ifstream::in);
@@ -152,7 +152,7 @@ inline bool read_control_data(std::string filename,
     //read data from line to values:
     iss_pos >> velocity;
     iss_pos >> yawrate;
-    
+
     // Set values
     meas.velocity = velocity;
     meas.yawrate = yawrate;
@@ -188,7 +188,7 @@ inline bool read_gt_data(std::string filename, std::vector<ground_truth>& gt) {
     double x, y, azimuth;
 
     // Declare single ground truth
-    ground_truth single_gt; 
+    ground_truth single_gt;
 
     //read data from line to values
     iss_pos >> x;
@@ -211,7 +211,7 @@ inline bool read_gt_data(std::string filename, std::vector<ground_truth>& gt) {
  * @param filename Name of file containing landmark observation measurements.
  * @output True if opening and reading file was successful
  */
-inline bool read_landmark_data(std::string filename, 
+inline bool read_landmark_data(std::string filename,
                                std::vector<LandmarkObs>& observations) {
   // Get file of landmark measurements
   std::ifstream in_file_obs(filename.c_str(),std::ifstream::in);
@@ -248,4 +248,35 @@ inline bool read_landmark_data(std::string filename,
   return true;
 }
 
+LandmarkObs transform_obs(const Particle &p, const LandmarkObs &obs) {
+  // Transform the x and y coordinates
+  double x_map, y_map;
+  x_map = p.x + (cos(p.theta) * obs.x) - (sin(p.theta) * obs.y);
+  y_map = p.y + (sin(p.theta) * obs.x) + (cos(p.theta) * obs.y);
+
+  // Create new LandmarkObs to hold transformed observation
+  LandmarkObs transformed_obs;
+  transformed_obs.id = obs.id;
+  transformed_obs.x = x_map;
+  transformed_obs.y = y_map;
+
+  return transformed_obs;
+}
+
+double multiv_prob(double sig_x, double sig_y, double x_obs, double y_obs, double mu_x, double mu_y) {
+  // calculate normalization term
+  double gauss_norm;
+  gauss_norm = 1 / (2 * M_PI * sig_x * sig_y);
+
+  // calculate exponent
+  double exponent;
+  exponent = (pow(x_obs - mu_x, 2) / (2 * pow(sig_x, 2)))
+               + (pow(y_obs - mu_y, 2) / (2 * pow(sig_y, 2)));
+
+  // calculate weight using normalization terms and exponent
+  double weight;
+  weight = gauss_norm * exp(-exponent);
+
+  return weight;
+}
 #endif  // HELPER_FUNCTIONS_H_
