@@ -90,7 +90,7 @@ void ParticleFilter::prediction(double delta_t, double std_pos[],
 }
 
 void ParticleFilter::dataAssociation(vector<LandmarkObs> predicted,
-                                     vector<LandmarkObs>& observations) {
+                                     vector<LandmarkObs> &observations) {
   /**
    * TODO: Find the predicted measurement that is closest to each
    *   observed measurement and assign the observed measurement to this
@@ -103,8 +103,8 @@ void ParticleFilter::dataAssociation(vector<LandmarkObs> predicted,
      LandmarkObs o = observations[i];
      double min_dist = numeric_limits<double>::max();
      int min_id;
-     double min_x;
-     double min_y;
+     // double min_x;
+     // double min_y;
      for (int j = 0; j < predicted.size(); j++){
        LandmarkObs p = predicted[j];
        double op_dist = dist(o.x, o.y, p.x, p.y);
@@ -112,14 +112,14 @@ void ParticleFilter::dataAssociation(vector<LandmarkObs> predicted,
        if (op_dist < min_dist){
          min_dist = op_dist;
          min_id = p.id;
-         min_x = p.x;
-         min_y = p.y;
+         // min_x = p.x;
+         // min_y = p.y;
        }
      }
      // assign the observed measurement to this particular landmark
      observations[i].id = min_id;
-     observations[i].x = min_x;
-     observations[i].y = min_y;
+     // observations[i].x = min_x;
+     // observations[i].y = min_y;
    }
 
 }
@@ -140,8 +140,68 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
    *   and the following is a good resource for the actual equation to implement
    *   (look at equation 3.33) http://planning.cs.uiuc.edu/node99.html
    */
+   // TODO Update the weights of each particle using a mult-variate Gaussian
+   // TODO get predicted
+  for (int i = 0; i < num_particles; i++) {
+
+    // get the particle x, y coordinates
+    double p_x = particles[i].x;
+    double p_y = particles[i].y;
+    double p_theta = particles[i].theta;
+    vector<LandmarkObs> predictions;
+
+    // for each map landmark...
+    for (int j = 0; j < map_landmarks.landmark_list.size(); j++) {
+
+      // get id and x,y coordinates
+      float lm_x = map_landmarks.landmark_list[j].x_f;
+      float lm_y = map_landmarks.landmark_list[j].y_f;
+      int lm_id = map_landmarks.landmark_list[j].id_i;
+
+      // only consider landmarks within sensor range of the particle (rather than using the "dist" method considering a circular
+      // region around the particle, this considers a rectangular region but is computationally faster)
+      if (fabs(lm_x - p_x) <= sensor_range && fabs(lm_y - p_y) <= sensor_range) {
+        predictions.push_back(LandmarkObs{ lm_id, lm_x, lm_y });
+      }
+    }
+    // transform
+    vector<LandmarkObs> trans_obs;
+    for (int j = 0; j < observations.size(); j++) {
+      trans_obs[i] = transform_obs(particles[i], observations[i]);
+    }
+   // assocations
+   dataAssociation(predictions, trans_obs);
+   particles[i].weight = 1.0;
+   // TODO update weights
+   for (int j = 0; j < trans_obs.size(); j++) {
+
+      // placeholders for observation and associated prediction coordinates
+      double o_x, o_y, pr_x, pr_y;
+      o_x = trans_obs[j].x;
+      o_y = trans_obs[j].y;
+
+      int associated_prediction = trans_obs[j].id;
+
+      // get the x,y coordinates of the prediction associated with the current observation
+      for (int k = 0; k < predictions.size(); k++) {
+        if (predictions[k].id == associated_prediction) {
+          pr_x = predictions[k].x;
+          pr_y = predictions[k].y;
+        }
+      }
+
+      // calculate weight for this observation with multivariate Gaussian
+      double s_x = std_landmark[0];
+      double s_y = std_landmark[1];
+      double obs_w = multiv_prob(s_x, s_y, pr_x, pr_y, o_x, o_y);
+      // product of this obersvation weight with total observations weight
+      particles[i].weight *= obs_w;
+    }
+}
+
 
 }
+
 
 void ParticleFilter::resample() {
   /**
@@ -151,6 +211,36 @@ void ParticleFilter::resample() {
    *   http://en.cppreference.com/w/cpp/numeric/random/discrete_distribution
    */
 
+
+   // get all of the current weights
+   vector<double> weights;
+   for (int i = 0; i < num_particles; i++) {
+     weights.push_back(particles[i].weight);
+   }
+   // get max weight
+   double max_weight = *max_element(weights.begin(), weights.end());
+
+   // generate random starting index for resampling wheel
+   uniform_int_distribution<int> uniintdist(0, num_particles-1);
+   auto index = uniintdist(gen);
+
+   // uniform random distribution [0.0, max_weight)
+   uniform_real_distribution<double> unirealdist(0.0, max_weight);
+
+   // beta?
+   double beta = 0.0;
+   vector<Particle> tmp_particles;
+   // spin the resample wheel!
+   for (int i = 0; i < num_particles; i++) {
+     beta += unirealdist(gen) * 2.0;
+     while (beta > weights[index]) {
+       beta -= weights[index];
+       index = (index + 1) % num_particles;
+     }
+     tmp_particles.push_back(particles[index]);
+   }
+
+   particles = tmp_particles;
 }
 
 void ParticleFilter::SetAssociations(Particle& particle,
