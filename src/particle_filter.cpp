@@ -18,8 +18,8 @@
 
 #include "helper_functions.h"
 
-using std::string;
-using std::vector;
+// using std::string;
+// using std::vector;
 using namespace std;
 
 std::default_random_engine gen;
@@ -41,14 +41,10 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
   for (int i = 0; i < num_particles; i++){
     Particle p;
     p.id = i;
-    p.x = x;
-    p.y = y;
-    p.theta = theta;
-    p.weight = 1.0;
-
     p.x = dist_x(gen);
     p.y = dist_y(gen);
     p.theta = dist_theta(gen);
+    p.weight = 1.0;
 
     particles.push_back(p);
   }
@@ -80,6 +76,7 @@ void ParticleFilter::prediction(double delta_t, double std_pos[],
     }
 
     // add random Gaussian noise
+    // necessary 0?
     normal_distribution<double> dist_x(particles[i].x, std_pos[0]);
     normal_distribution<double> dist_y(particles[i].y, std_pos[1]);
     normal_distribution<double> dist_theta(particles[i].theta, std_pos[2]);
@@ -102,7 +99,8 @@ void ParticleFilter::dataAssociation(vector<LandmarkObs> predicted,
    */
    for (unsigned int i = 0; i < observations.size(); i++){
      LandmarkObs o = observations[i];
-     double min_dist = -1;
+     // base on sensor_range
+     double min_dist = 50 * 3;
      int min_id;
      // double min_x;
      // double min_y;
@@ -161,7 +159,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
     // transform
     vector<LandmarkObs> trans_obs;
     for (unsigned int j = 0; j < observations.size(); j++) {
-      trans_obs[i] = transform_obs(particles[i], observations[i]);
+      trans_obs[j] = transform_obs(particles[i], observations[j]);
     }
     // assocations
     dataAssociation(predictions, trans_obs);
