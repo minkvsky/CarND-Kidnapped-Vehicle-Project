@@ -15,12 +15,23 @@
 #include <string>
 #include <vector>
 #include "map.h"
+// #include "particle_filter.h"
 
 // for portability of M_PI (Vis Studio, MinGW, etc.)
 #ifndef M_PI
 const double M_PI = 3.14159265358979323846;
 #endif
 
+struct Particle {
+  int id;
+  double x;
+  double y;
+  double theta;
+  double weight;
+  std::vector<int> associations;
+  std::vector<double> sense_x;
+  std::vector<double> sense_y;
+};
 /**
  * Struct representing one position/control measurement.
  */
@@ -248,7 +259,7 @@ inline bool read_landmark_data(std::string filename,
   return true;
 }
 
-LandmarkObs transform_obs(const Particle &p, const LandmarkObs &obs) {
+LandmarkObs transform_obs(Particle &p, const LandmarkObs &obs) {
   // Transform the x and y coordinates
   double x_map, y_map;
   x_map = p.x + (cos(p.theta) * obs.x) - (sin(p.theta) * obs.y);

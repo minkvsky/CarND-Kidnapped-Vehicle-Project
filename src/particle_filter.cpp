@@ -20,6 +20,7 @@
 
 using std::string;
 using std::vector;
+using namespace std;
 
 std::default_random_engine gen;
 
@@ -49,7 +50,7 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
     p.y = dist_y(gen);
     p.theta = dist_theta(gen);
 
-    particles.push_back(p)
+    particles.push_back(p);
   }
 
   is_initialized = true;
@@ -99,16 +100,16 @@ void ParticleFilter::dataAssociation(vector<LandmarkObs> predicted,
    *   probably find it useful to implement this method and use it as a helper
    *   during the updateWeights phase.
    */
-   for (int i = 0; i < observations.size(); i++){
+   for (unsigned int i = 0; i < observations.size(); i++){
      LandmarkObs o = observations[i];
-     double min_dist = numeric_limits<double>::max();
+     double min_dist = -1;
      int min_id;
      // double min_x;
      // double min_y;
-     for (int j = 0; j < predicted.size(); j++){
+     for (unsigned int j = 0; j < predicted.size(); j++){
        LandmarkObs p = predicted[j];
        double op_dist = dist(o.x, o.y, p.x, p.y);
-       # find min
+       // find min
        if (op_dist < min_dist){
          min_dist = op_dist;
          min_id = p.id;
@@ -147,7 +148,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
     // get pridictions
     vector<LandmarkObs> predictions;
     // for each map landmark...
-    for (int j = 0; j < map_landmarks.landmark_list.size(); j++) {
+    for (unsigned int j = 0; j < map_landmarks.landmark_list.size(); j++) {
 
       float lm_x = map_landmarks.landmark_list[j].x_f;
       float lm_y = map_landmarks.landmark_list[j].y_f;
@@ -159,19 +160,19 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
     }
     // transform
     vector<LandmarkObs> trans_obs;
-    for (int j = 0; j < observations.size(); j++) {
+    for (unsigned int j = 0; j < observations.size(); j++) {
       trans_obs[i] = transform_obs(particles[i], observations[i]);
     }
     // assocations
     dataAssociation(predictions, trans_obs);
     particles[i].weight = 1.0;
     // update weights
-    for (int j = 0; j < trans_obs.size(); j++) {
+    for (unsigned int j = 0; j < trans_obs.size(); j++) {
 
       // placeholders for observation and associated prediction coordinates
       double pr_x, pr_y;
       // get the x,y coordinates of the prediction associated with the current observation
-      for (int k = 0; k < predictions.size(); k++) {
+      for (unsigned int k = 0; k < predictions.size(); k++) {
         if (predictions[k].id == trans_obs[j].id) {
           pr_x = predictions[k].x;
           pr_y = predictions[k].y;
