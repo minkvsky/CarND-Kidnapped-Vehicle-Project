@@ -144,23 +144,16 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
    // TODO get predicted
   for (int i = 0; i < num_particles; i++) {
 
-    // get the particle x, y coordinates
-    double p_x = particles[i].x;
-    double p_y = particles[i].y;
-    double p_theta = particles[i].theta;
+    // get pridictions
     vector<LandmarkObs> predictions;
-
     // for each map landmark...
     for (int j = 0; j < map_landmarks.landmark_list.size(); j++) {
 
-      // get id and x,y coordinates
       float lm_x = map_landmarks.landmark_list[j].x_f;
       float lm_y = map_landmarks.landmark_list[j].y_f;
       int lm_id = map_landmarks.landmark_list[j].id_i;
 
-      // only consider landmarks within sensor range of the particle (rather than using the "dist" method considering a circular
-      // region around the particle, this considers a rectangular region but is computationally faster)
-      if (fabs(lm_x - p_x) <= sensor_range && fabs(lm_y - p_y) <= sensor_range) {
+      if (fabs(lm_x - particles[i].x) <= sensor_range && fabs(lm_y - particles[i].y) <= sensor_range) {
         predictions.push_back(LandmarkObs{ lm_id, lm_x, lm_y });
       }
     }
@@ -169,32 +162,25 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
     for (int j = 0; j < observations.size(); j++) {
       trans_obs[i] = transform_obs(particles[i], observations[i]);
     }
-   // assocations
-   dataAssociation(predictions, trans_obs);
-   particles[i].weight = 1.0;
-   // TODO update weights
-   for (int j = 0; j < trans_obs.size(); j++) {
+    // assocations
+    dataAssociation(predictions, trans_obs);
+    particles[i].weight = 1.0;
+    // update weights
+    for (int j = 0; j < trans_obs.size(); j++) {
 
       // placeholders for observation and associated prediction coordinates
-      double o_x, o_y, pr_x, pr_y;
-      o_x = trans_obs[j].x;
-      o_y = trans_obs[j].y;
-
-      int associated_prediction = trans_obs[j].id;
-
+      double pr_x, pr_y;
       // get the x,y coordinates of the prediction associated with the current observation
       for (int k = 0; k < predictions.size(); k++) {
-        if (predictions[k].id == associated_prediction) {
+        if (predictions[k].id == trans_obs[j].id) {
           pr_x = predictions[k].x;
           pr_y = predictions[k].y;
         }
       }
 
       // calculate weight for this observation with multivariate Gaussian
-      double s_x = std_landmark[0];
-      double s_y = std_landmark[1];
-      double obs_w = multiv_prob(s_x, s_y, pr_x, pr_y, o_x, o_y);
-      // product of this obersvation weight with total observations weight
+      double obs_w = multiv_prob(std_landmark[0], std_landmark[1], pr_x, pr_y, trans_obs[j].x, trans_obs[j].y);
+      // product of weights
       particles[i].weight *= obs_w;
     }
 }
