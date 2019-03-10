@@ -259,7 +259,7 @@ inline bool read_landmark_data(std::string filename,
   return true;
 }
 
-LandmarkObs transform_obs(Particle &p, const LandmarkObs &obs) {
+inline LandmarkObs transform_obs(Particle &p, const LandmarkObs &obs) {
   // Transform the x and y coordinates
   double x_map, y_map;
   x_map = p.x + (cos(p.theta) * obs.x) - (sin(p.theta) * obs.y);
@@ -274,7 +274,7 @@ LandmarkObs transform_obs(Particle &p, const LandmarkObs &obs) {
   return transformed_obs;
 }
 
-double multiv_prob(double sig_x, double sig_y, double x_obs, double y_obs, double mu_x, double mu_y) {
+inline double multiv_prob(double sig_x, double sig_y, double x_obs, double y_obs, double mu_x, double mu_y) {
   // calculate normalization term
   double gauss_norm;
   gauss_norm = 1 / (2 * M_PI * sig_x * sig_y);
