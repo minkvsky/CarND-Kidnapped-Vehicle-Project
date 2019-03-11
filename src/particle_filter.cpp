@@ -37,7 +37,8 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
   normal_distribution<double> dist_x(x, std[0]);
   normal_distribution<double> dist_y(y, std[1]);
   normal_distribution<double> dist_theta(theta, std[2]);
-
+  // particles.resize(num_particles);
+  // weights.resize(num_particles);
   for (int i = 0; i < num_particles; i++){
     Particle p;
     p.id = i;
@@ -50,7 +51,7 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
   }
 
   is_initialized = true;
-
+  cout << "init done" << endl;
 }
 
 void ParticleFilter::prediction(double delta_t, double std_pos[],
@@ -76,7 +77,6 @@ void ParticleFilter::prediction(double delta_t, double std_pos[],
     }
 
     // add random Gaussian noise
-    // necessary 0?
     normal_distribution<double> dist_x(particles[i].x, std_pos[0]);
     normal_distribution<double> dist_y(particles[i].y, std_pos[1]);
     normal_distribution<double> dist_theta(particles[i].theta, std_pos[2]);
@@ -84,7 +84,7 @@ void ParticleFilter::prediction(double delta_t, double std_pos[],
     particles[i].y = dist_y(gen);
     particles[i].theta = dist_theta(gen);
     }
-
+    cout << "predict done" << endl;
 }
 
 void ParticleFilter::dataAssociation(vector<LandmarkObs> predicted,
@@ -102,8 +102,6 @@ void ParticleFilter::dataAssociation(vector<LandmarkObs> predicted,
      // base on sensor_range
      double min_dist = 50 * 3;
      int min_id;
-     // double min_x;
-     // double min_y;
      for (unsigned int j = 0; j < predicted.size(); j++){
        LandmarkObs p = predicted[j];
        double op_dist = dist(o.x, o.y, p.x, p.y);
@@ -117,9 +115,8 @@ void ParticleFilter::dataAssociation(vector<LandmarkObs> predicted,
      }
      // assign the observed measurement to this particular landmark
      observations[i].id = min_id;
-     // observations[i].x = min_x;
-     // observations[i].y = min_y;
    }
+   cout << "dataAssociation done " << endl;
 
 }
 
@@ -156,20 +153,20 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
         predictions.push_back(LandmarkObs{ lm_id, lm_x, lm_y });
       }
     }
+    cout << "get predictions" << endl;
     // transform
     vector<LandmarkObs> trans_obs;
     for (unsigned int j = 0; j < observations.size(); j++) {
-      trans_obs[j] = transform_obs(particles[i], observations[j]);
+      trans_obs.push_back(transform_obs(particles[i], observations[j]));
     }
+    cout << "transorm " << endl;
     // assocations
     dataAssociation(predictions, trans_obs);
     particles[i].weight = 1.0;
     // update weights
     for (unsigned int j = 0; j < trans_obs.size(); j++) {
 
-      // placeholders for observation and associated prediction coordinates
       double pr_x, pr_y;
-      // get the x,y coordinates of the prediction associated with the current observation
       for (unsigned int k = 0; k < predictions.size(); k++) {
         if (predictions[k].id == trans_obs[j].id) {
           pr_x = predictions[k].x;
@@ -183,7 +180,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
       particles[i].weight *= obs_w;
     }
 }
-
+  cout << "update weights done" << endl;
 
 }
 
@@ -196,8 +193,6 @@ void ParticleFilter::resample() {
    *   http://en.cppreference.com/w/cpp/numeric/random/discrete_distribution
    */
 
-
-   // get all of the current weights
    vector<double> weights;
    for (int i = 0; i < num_particles; i++) {
      weights.push_back(particles[i].weight);
@@ -212,7 +207,6 @@ void ParticleFilter::resample() {
    // uniform random distribution [0.0, max_weight)
    uniform_real_distribution<double> unirealdist(0.0, max_weight);
 
-   // beta?
    double beta = 0.0;
    vector<Particle> tmp_particles;
    // spin the resample wheel!
@@ -226,6 +220,7 @@ void ParticleFilter::resample() {
    }
 
    particles = tmp_particles;
+   cout << "resample done " << endl;
 }
 
 void ParticleFilter::SetAssociations(Particle& particle,
